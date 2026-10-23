@@ -1,0 +1,142 @@
+Step 1: Install Docker
+
+sudo apt update
+sudo apt install -y docker.io
+sudo systemctl enable --now docker
+
+Verify Docker:
+
+sudo docker --version
+
+Step 2: Create the Flask project
+
+mkdir flask-docker-app
+cd flask-docker-app
+
+Step 3: Create the Python Flask application
+
+cat > app.py <<'EOF'
+from flask import Flask, jsonify
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return """
+    <html>
+        <head>
+            <title>Flask Docker App</title>
+        </head>
+        <body style="font-family: Arial; text-align: center; margin-top: 100px;">
+            <h1>Hello from Python Flask!</h1>
+            <h2>Running inside Docker on Ubuntu 🚀</h2>
+            <p>Your Dockerized Flask application is working.</p>
+        </body>
+    </html>
+    """
+
+@app.route("/health")
+def health():
+    return jsonify(status="healthy")
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+EOF
+
+Step 4: Create the requirements file
+
+cat > requirements.txt <<'EOF'
+Flask>=3.1,<4.0
+gunicorn>=23.0,<24.0
+EOF
+
+Step 5: Create the Dockerfile
+
+cat > Dockerfile <<'EOF'
+FROM python:3.12-slim
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app.py .
+
+EXPOSE 5000
+
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "app:app"]
+EOF
+
+Step 6: Create the Docker ignore file
+
+cat > .dockerignore <<'EOF'
+__pycache__
+*.pyc
+.venv
+venv
+.git
+.env
+EOF
+
+Step 7: Build the Docker image
+
+sudo docker build -t flask-docker-app .
+
+Step 8: Run the Docker container
+
+sudo docker run -d \
+  --name flask-container \
+  -p 5000:5000 \
+  --restart unless-stopped \
+  flask-docker-app
+
+Step 9: Verify the application
+
+Check the running container:
+
+sudo docker ps
+
+Check the application health:
+
+curl http://localhost:5000/health
+
+Expected output:
+
+{"status":"healthy"}
+
+Test the home page:
+
+curl http://localhost:5000/
+
+Step 10: Open the application in your browser
+
+Open:
+
+http://localhost:5000
+
+You should see:
+
+    Hello from Python Flask! Running inside Docker on Ubuntu 🚀
+
+Health endpoint:
+
+http://localhost:5000/health
+Step 11: Useful Docker commands
+
+View application logs:
+
+sudo docker logs -f flask-container
+
+Stop the container:
+
+sudo docker stop flask-container
+
+Start the container again:
+
+sudo docker start flask-container
+
+Restart the container:
